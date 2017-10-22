@@ -33,22 +33,10 @@ namespace GOGWrapper.GOG
 
         public static void launch(string id, Action callback = null)
         {
-            GOGGalaxy.open(id);
-
-            IntPtr hwnd = WinAPI.FindWindow("GalaxyClientClass", null);
-
-            bool windowExists = WinAPI.IsWindow(hwnd);
-
-            Thread.Sleep(500);
-
-            if (!windowExists)
-            {
-                hwnd = WinAPI.WaitForWindow("GalaxyClientClass", null);
-                Thread.Sleep(5000);
-            }
-
-            WinAPI.SetForegroundWindow(hwnd);
-            WinAPI.Click(hwnd, new System.Drawing.Point(_x, _y));
+            // GOGGalaxy.launchWinapi(id); // old hacky way
+            
+            Process.Start(GOGRegistry.ClientExecutable, $@"/gameid {id} /command runGame");
+            GOGGalaxy.waitForStartup();
 
             GOGGame game = GOGRegistry.Game(id);            
 
@@ -82,6 +70,33 @@ namespace GOGWrapper.GOG
             }
 
             callback?.Invoke();
+        }
+
+        private static void launchWinapi(string id)
+        {
+            GOGGalaxy.open(id);
+
+            IntPtr hwnd = GOGGalaxy.waitForStartup();
+
+            WinAPI.SetForegroundWindow(hwnd);
+            WinAPI.Click(hwnd, new System.Drawing.Point(_x, _y));
+        }
+
+        private static IntPtr waitForStartup()
+        {
+            IntPtr hwnd = WinAPI.FindWindow("GalaxyClientClass", null);
+
+            bool windowExists = WinAPI.IsWindow(hwnd);
+
+            Thread.Sleep(500);
+
+            if (!windowExists)
+            {
+                hwnd = WinAPI.WaitForWindow("GalaxyClientClass", null);
+                Thread.Sleep(5000);
+            }
+
+            return hwnd;
         }
 
         private static string normalize(string path)
